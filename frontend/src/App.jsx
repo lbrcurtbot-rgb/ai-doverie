@@ -53,7 +53,7 @@ export default function App(){
   const [files, setFiles] = useState([])
   const [uploadRes, setUploadRes] = useState(null)
 
-  const [activeTab, setActiveTab] = useState('upload') // 'upload' | 'analytics'
+  const [activeTab, setActiveTab] = useState('upload') // 'upload' | 'analytics' | 'plans'
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
 
@@ -107,6 +107,7 @@ export default function App(){
     <div className="row" style={{gap:8, marginBottom:12}}>
       <button className={"btn " + (activeTab==='upload'?'primary':'')} onClick={()=>setActiveTab('upload')}>Загрузка</button>
       <button className={"btn " + (activeTab==='analytics'?'primary':'')} onClick={()=>setActiveTab('analytics')}>Аналитика</button>
+      <button className={"btn " + (activeTab==='plans'?'primary':'')} onClick={()=>setActiveTab('plans')}>Планы действий</button>
     </div>
 
     {activeTab==='upload' && (
@@ -143,7 +144,7 @@ export default function App(){
     </section>
     )}
 
-    {activeTab==='analytics' && (
+    {activeTab==='analytics' && (<>
 <section className="panel" style={{marginBottom:16}}>
       <div className="row" style={{gap:8, alignItems:"center"}}><BarChart3 size={18}/> <b>Аналитика обращений</b><div style={{flex:1}}/><label className="muted" style={{marginRight:8}}>Период:</label><input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} /><span className="muted" style={{padding:"0 6px"}}>—</span><input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} /><button className="btn" onClick={async()=>{ try{ const a = await apiGet(`/appeals/analytics?municipality_id=${mId}&date_from=${dateFrom||""}&date_to=${dateTo||""}`); setAnalytics(a) }catch(e){ setAnalytics({by_category:[],by_date:[],per_category:[]}) } }}>Показать</button></div>
       {analytics? <div className="row" style={{gap:24, marginTop:12, flexWrap:'wrap'}}>
@@ -163,29 +164,6 @@ export default function App(){
         </div>
       </div> : <div className="muted">Загрузите данные для аналитики.</div>}
     </section>
-    )}
-
-
-    <section className="panel">
-      <div className="row" style={{gap:8}}><FileDown size={18}/> <b>Планы действий по категориям</b></div>
-      <div className="row" style={{gap:6, flexWrap:'wrap', marginTop:8}}>
-        {['Благоустройство','Окружающая среда','Доступность цифровых услуг','Дороги','Образование','Культура','Здравоохранение','Транспортное обслуживание','ЖКХ','Адаптация участников СВО','Политическое доверие']
-          .map(cat=>(<button key={cat} onClick={()=>handleGeneratePlan(cat)} disabled={loading}>{cat}</button>))}
-      </div>
-      <div style={{marginTop:10}}>
-        {plans?.map((p,i)=>(<div key={i} className="row" style={{justifyContent:'space-between', borderBottom:'1px solid var(--border)', padding:'8px 0'}}>
-          <div>
-            <div><b>{p.category}</b> • {p.municipality_name} • <span className="muted">{p.created_at}</span></div>
-            <div className="muted">{p.summary}</div>
-          </div>
-          <div className="row" style={{gap:8}}>
-            <a className="badge" href={absApiUrlMaybe(p.docx_url)} target="_blank"><Download size={14}/> DOCX</a>
-            <a className="badge" href={absApiUrlMaybe(p.pdf_url)} target="_blank"><Download size={14}/> PDF</a>
-          </div>
-        </div>))}
-      </div>
-    </section>
-
     <section className="panel" style={{marginBottom:16}}>
       <div className="row" style={{justifyContent:'space-between'}}>
         <div className="row">
@@ -218,7 +196,30 @@ export default function App(){
           </div>
         ))}
       </div>
-    </section>)}
+    </section>
+    </>)}
+
+    {activeTab==='plans' && (
+    <section className="panel">
+      <div className="row" style={{gap:8}}><FileDown size={18}/> <b>Планы действий по категориям</b></div>
+      <div className="row" style={{gap:6, flexWrap:'wrap', marginTop:8}}>
+        {['Благоустройство','Окружающая среда','Доступность цифровых услуг','Дороги','Образование','Культура','Здравоохранение','Транспортное обслуживание','ЖКХ','Адаптация участников СВО','Политическое доверие']
+          .map(cat=>(<button key={cat} onClick={()=>handleGeneratePlan(cat)} disabled={loading}>{cat}</button>))}
+      </div>
+      <div style={{marginTop:10}}>
+        {plans?.map((p,i)=>(<div key={i} className="row" style={{justifyContent:'space-between', borderBottom:'1px solid var(--border)', padding:'8px 0'}}>
+          <div>
+            <div><b>{p.category}</b> • {p.municipality_name} • <span className="muted">{p.created_at}</span></div>
+            <div className="muted">{p.summary}</div>
+          </div>
+          <div className="row" style={{gap:8}}>
+            <a className="badge" href={absApiUrlMaybe(p.docx_url)} target="_blank"><Download size={14}/> DOCX</a>
+            <a className="badge" href={absApiUrlMaybe(p.pdf_url)} target="_blank"><Download size={14}/> PDF</a>
+          </div>
+        </div>))}
+      </div>
+    </section>
+    )}
 
     <footer style={{marginTop:24, borderTop:'1px solid var(--border)'}}>
       <div className="row" style={{justifyContent:'space-between', padding:'12px 0'}}>
