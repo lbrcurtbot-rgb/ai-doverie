@@ -1,0 +1,19 @@
+
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - exports:/data/exports
+    ports:
+      - "8000:8000"
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    volumes:
+      - exports:/usr/share/nginx/html/exports:ro
+volumes:
+  exports:

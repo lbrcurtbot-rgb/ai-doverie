@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: ai-doverie-backend
+    runtime: docker
+    repo: https://github.com/lbrcurtbot-rgb/ai-doverie
+    rootDir: backend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: EXPORT_DIR
+        value: /data/exports
+      - key: CORS_ALLOW_ORIGIN_REGEX
+        value: ^https://.*\.onrender\.com$
+      - key: CORS_ALLOW_ORIGINS
+        value: http://localhost:5173
+      - key: CORS_ALLOW_CREDENTIALS
+        value: "false"
+
+  - type: web
+    name: ai-doverie-frontend
+    runtime: docker
+    repo: https://github.com/lbrcurtbot-rgb/ai-doverie
+    rootDir: frontend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: BACKEND_ORIGIN
+        fromService:
+          type: web
+          name: ai-doverie-backend
+          property: connectionString
+      - key: BACKEND_HOST
+        fromService:
+          type: web
+          name: ai-doverie-backend
+          property: host
+      - key: BACKEND_PORT
+        fromService:
+          type: web
+          name: ai-doverie-backend
+          property: port
