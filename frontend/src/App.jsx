@@ -1,5 +1,6 @@
 // Force rebuild
 import React, { useEffect, useMemo, useState } from 'react'
+import YandexMap from './YandexMap'
 import { Upload, FileSpreadsheet, FileDown, BarChart3, Loader2, Download } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts'
 
@@ -125,6 +126,10 @@ export default function App(){
         </button>
         {uploadRes?.export_url && <a className="badge" href={absApiUrlMaybe(uploadRes.export_url)} target="_blank"><FileSpreadsheet size={14}/> Скачать объединённый Excel</a>}
       </div>
+      {useMemo(() => {
+        const points = uploadRes?.items?.filter(p => p.lat && p.lng) || [];
+        return points.length > 0 && <YandexMap points={points} />;
+      }, [uploadRes])}
       {uploadRes?.items?.length>0 && <div style={{marginTop:12, maxHeight:280, overflow:'auto'}}>
         <table>
           <thead><tr>
