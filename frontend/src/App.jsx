@@ -1,3 +1,4 @@
+// Force rebuild
 import React, { useEffect, useMemo, useState } from 'react'
 import { Upload, FileSpreadsheet, FileDown, BarChart3, Loader2, Download } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts'
