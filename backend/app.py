@@ -316,8 +316,6 @@ def municipalities():
 from fastapi import Request
 
 @app.post("/api/appeals/upload")
-
-@app.post("/api/appeals/upload")
 async def upload_appeals(request: Request, files: List[UploadFile] = File(...), municipality_id: Optional[int] = Form(None)):
     if not files:
         raise HTTPException(400, "Файлы не переданы")
@@ -454,7 +452,7 @@ def list_plans(municipality_id: Optional[int] = None):
 async def generate_plan(category:str, payload: dict, request: Request):
     municipality_id = payload.get("municipality_id")
     muni = next((m for m in MUNICIPALITIES if m["id"]==municipality_id), {"name":"Муниципалитет"})
-        df = pd.DataFrame(DB['rows'] or [], columns=['source','date','address','text','category','lat','lng','municipality_id'])
+    df = pd.DataFrame(DB['rows'] or [], columns=['source','date','address','text','category','lat','lng','municipality_id'])
     if municipality_id:
         df = df[df['municipality_id']==municipality_id]
     df_cat = df[df['category']==category] if not df.empty else df
@@ -594,77 +592,3 @@ def write_pdf(path:str, text:str):
         return True
     except Exception:
         return False
-
-@app.get("/api/appeals/plans")
-def list_plans(municipality_id: Optional[int] = None):
-    items = DB["plans"]
-    if municipality_id:
-        items = [p for p in items if p["municipality_id"]==municipality_id]
-    return {"items": items[-50:]}
-
-@app.post("/api/appeals/generate-plan/{category}")
-async def generate_plan(category:str, payload: dict, request: Request):
-    municipality_id = payload.get("municipality_id")
-    muni = next((m for m in MUNICIPALITIES if m["id"]==municipality_id), {"name":"Муниципалитет"})
-    text = make_plan_text(category, muni["name"])
-
-    plan_id = str(uuid.uuid4())
-    docx_path = os.path.join(EXPORT_DIR, f"plan_{plan_id}.docx")
-    pdf_path  = os.path.join(EXPORT_DIR, f"plan_{plan_id}.pdf")
-    write_docx(docx_path, text)
-    write_pdf(pdf_path, text)
-
-    origin = str(request.base_url).rstrip('/')
-    item = {
-      "id": plan_id,
-      "category": category,
-      "municipality_id": municipality_id,
-      "municipality_name": muni["name"],
-      "summary": text.splitlines()[0],
-      "created_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
-      "docx_url": f"{origin}/api/appeals/file/{os.path.basename(docx_path)}",
-      "pdf_url": f"{origin}/api/appeals/file/{os.path.basename(pdf_path)}",
-    }
-    DB["plans"].append(item)
-    return {"ok": True, "item": item}
-
-@app.get("/api/appeals/file/{name}")
-@app.get("/appeals/file/{name}")
-def get_any_file(name:str):
-    path = os.path.join(EXPORT_DIR, name)
-    if not os.path.exists(path): raise HTTPException(404, "Файл не найден")
-    # simple content-type guess
-    mt = "application/octet-stream"
-    if name.endswith(".pdf"): mt = "application/pdf"
-    if name.endswith(".docx"): mt = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    if name.endswith(".xlsx"): mt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    return FileResponse(path, filename=name, media_type=mt)
-
-
-@app.get('/api/health')
-def health():
-    return {'ok': True}
-
-
-# --- Extra fallback CORS middleware (adds headers if something upstream stripped them) ---
-class FallbackCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        # Handle preflight
-        if request.method == "OPTIONS":
-            resp = Response(status_code=204)
-        else:
-            resp = await call_next(request)
-
-        origin = request.headers.get("origin")
-        # If CORSMiddleware already set headers, leave them; otherwise add permissive defaults
-        if "access-control-allow-origin" not in (k.lower() for k in resp.headers.keys()):
-            # Allow specific origin if provided, else wildcard
-            allowed = origin or "*"
-            resp.headers["Access-Control-Allow-Origin"] = allowed if allowed != "null" else "*"
-            resp.headers["Vary"] = (resp.headers.get("Vary", "") + ", Origin").strip(", ")
-            resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-            resp.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*") or "*"
-            resp.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
-        return resp
-
-app.add_middleware(FallbackCORSMiddleware)
