@@ -126,13 +126,7 @@ export default function App(){
         </button>
         {uploadRes?.export_url && <a className="badge" href={absApiUrlMaybe(uploadRes.export_url)} target="_blank"><FileSpreadsheet size={14}/> Скачать объединённый Excel</a>}
       </div>
-      {(() => {
-        const pointsWithCoords = uploadRes?.items?.filter(p => p.lat && p.lng) || [];
-        if (pointsWithCoords.length > 0) {
-          return <YandexMap points={pointsWithCoords} />;
-        }
-        return null;
-      })()}
+      <YandexMap points={uploadRes?.items || []} />
       {uploadRes?.items?.length>0 && <div style={{marginTop:12, maxHeight:280, overflow:'auto'}}>
         <table>
           <thead><tr>
