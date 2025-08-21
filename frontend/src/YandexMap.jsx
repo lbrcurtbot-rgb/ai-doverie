@@ -20,6 +20,7 @@ const YandexMap = ({ points }) => {
 
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = window.ymaps3;
 
+
         let center = [37.89, 55.68]; // Default center to Lyubertsy (lng, lat)
         let zoom = 12;
 
