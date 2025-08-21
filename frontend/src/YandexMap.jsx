@@ -27,17 +27,17 @@ const YandexMap = ({ points }) => {
 
         // Find the center of the points
       let center = [37.89, 55.68]; // Default center to Lyubertsy (lng, lat)
-        if (points && points.length > 0) {
-          const validPoints = points.filter(p => p.lat && p.lng);
-          if (validPoints.length > 0) {
-            const lats = validPoints.map(p => p.lat);
-            const lngs = validPoints.map(p => p.lng);
-            center = [
-              (Math.min(...lngs) + Math.max(...lngs)) / 2,
-              (Math.min(...lats) + Math.max(...lats)) / 2,
-            ];
-          }
-        }
+        // if (points && points.length > 0) {
+        //   const validPoints = points.filter(p => p.lat && p.lng);
+        //   if (validPoints.length > 0) {
+        //     const lats = validPoints.map(p => p.lat);
+        //     const lngs = validPoints.map(p => p.lng);
+        //     center = [
+        //       (Math.min(...lngs) + Math.max(...lngs)) / 2,
+        //       (Math.min(...lats) + Math.max(...lats)) / 2,
+        //     ];
+        //   }
+        // }
 
         const map = new YMap(mapRef.current, {
           location: {
