@@ -61,6 +61,7 @@ export default function App(){
 
   const [analytics, setAnalytics] = useState(null)
   const [plans, setPlans] = useState([])
+  const [openAiApiKey, setOpenAiApiKey] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -85,7 +86,8 @@ export default function App(){
   const handleGeneratePlan = async (category)=>{
     setLoading(true); setError(null)
     try{
-      const res = await apiPostJSON('/appeals/generate-plan/'+encodeURIComponent(category), { municipality_id: mId })
+      const payload = { municipality_id: mId, openai_api_key: openAiApiKey };
+      const res = await apiPostJSON('/appeals/generate-plan/'+encodeURIComponent(category), payload)
       const refreshed = await apiGet('/appeals/plans?municipality_id='+mId)
       setPlans(refreshed.items||[])
     }catch(e){ setError(e) }finally{ setLoading(false) }
@@ -205,6 +207,10 @@ export default function App(){
     {activeTab==='plans' && (
     <section className="panel">
       <div className="row" style={{gap:8}}><FileDown size={18}/> <b>Планы действий по категориям</b></div>
+      <div className="row" style={{gap:8, marginTop:12, alignItems:'center'}}>
+        <label className="muted">OpenAI API Key:</label>
+        <input type="password" value={openAiApiKey} onChange={e=>setOpenAiApiKey(e.target.value)} placeholder="sk-..." style={{minWidth:300}}/>
+      </div>
       <div className="row" style={{gap:6, flexWrap:'wrap', marginTop:8}}>
         {['Благоустройство','Окружающая среда','Доступность цифровых услуг','Дороги','Образование','Культура','Здравоохранение','Транспортное обслуживание','ЖКХ','Адаптация участников СВО','Политическое доверие']
           .map(cat=>(<button key={cat} onClick={()=>handleGeneratePlan(cat)} disabled={loading}>{cat}</button>))}
