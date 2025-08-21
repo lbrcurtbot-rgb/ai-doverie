@@ -1,65 +1,83 @@
 // frontend/src/YandexMap.jsx
 import React, { useEffect, useRef } from 'react';
 
-// IMPORTANT: You need to replace this with your actual Yandex Maps API key in `frontend/index.html`.
+// IMPORTANT: You need to replace YOUR_YANDEX_MAPS_API_KEY in `frontend/index.html` with your actual key.
 
 const YandexMap = ({ points }) => {
   const mapRef = useRef(null);
+  // Use a ref to keep track of the map instance to prevent re-initialization
+  const mapInstanceRef = useRef(null);
 
   useEffect(() => {
-    if (!window.ymaps3) {
-      console.error("Yandex Maps API is not loaded.");
-      return;
-    }
-
-    window.ymaps3.ready.then(async () => {
-      const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = window.ymaps3;
-
-      // Clear previous map instance if any
-      if (mapRef.current) {
-          mapRef.current.innerHTML = '';
+    const initMap = () => {
+      // If the API is not ready, wait and try again.
+      if (!window.ymaps3) {
+        setTimeout(initMap, 100);
+        return;
       }
 
-      // Find the center of the points
-      let center = [37.57, 55.75]; // Default center (lng, lat for yandex)
-      if (points && points.length > 0) {
-        const validPoints = points.filter(p => p.lat && p.lng);
-        if (validPoints.length > 0) {
-          const lats = validPoints.map(p => p.lat);
-          const lngs = validPoints.map(p => p.lng);
-          center = [
-            (Math.min(...lngs) + Math.max(...lngs)) / 2,
-            (Math.min(...lats) + Math.max(...lats)) / 2,
-          ];
+      // The API is ready, proceed with initialization.
+      window.ymaps3.ready.then(async () => {
+        // Prevent re-initialization if the map is already created
+        if (mapInstanceRef.current) {
+          return;
         }
-      }
 
-      const map = new YMap(mapRef.current, {
-        location: {
-          center: center,
-          zoom: 10,
-        },
-      });
+        const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = window.ymaps3;
 
-      map.addChild(new YMapDefaultSchemeLayer());
-      map.addChild(new YMapDefaultFeaturesLayer());
-
-      if (points) {
-        points.forEach(point => {
-          if (point.lat && point.lng) {
-            const markerElement = document.createElement('div');
-            markerElement.className = 'marker';
-            markerElement.style.width = '10px';
-            markerElement.style.height = '10px';
-            markerElement.style.backgroundColor = 'red';
-            markerElement.style.borderRadius = '50%';
-            const marker = new YMapMarker({ coordinates: [point.lng, point.lat] }, markerElement);
-            map.addChild(marker);
+        // Find the center of the points
+        let center = [37.57, 55.75]; // Default center (lng, lat for yandex)
+        if (points && points.length > 0) {
+          const validPoints = points.filter(p => p.lat && p.lng);
+          if (validPoints.length > 0) {
+            const lats = validPoints.map(p => p.lat);
+            const lngs = validPoints.map(p => p.lng);
+            center = [
+              (Math.min(...lngs) + Math.max(...lngs)) / 2,
+              (Math.min(...lats) + Math.max(...lats)) / 2,
+            ];
           }
+        }
+
+        const map = new YMap(mapRef.current, {
+          location: {
+            center: center,
+            zoom: 10,
+          },
         });
+
+        mapInstanceRef.current = map;
+
+        map.addChild(new YMapDefaultSchemeLayer());
+        map.addChild(new YMapDefaultFeaturesLayer());
+
+        if (points) {
+          points.forEach(point => {
+            if (point.lat && point.lng) {
+              const markerElement = document.createElement('div');
+              markerElement.className = 'marker';
+              markerElement.style.width = '10px';
+              markerElement.style.height = '10px';
+              markerElement.style.backgroundColor = 'red';
+              markerElement.style.borderRadius = '50%';
+              const marker = new YMapMarker({ coordinates: [point.lng, point.lat] }, markerElement);
+              map.addChild(marker);
+            }
+          });
+        }
+      });
+    };
+
+    initMap();
+
+    return () => {
+      // Cleanup the map instance on component unmount
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.destroy();
+        mapInstanceRef.current = null;
       }
-    });
-  }, [points]);
+    };
+  }, [points]); // Rerun effect if points change
 
   return <div ref={mapRef} style={{ width: '100%', height: '400px', marginTop: '16px' }}></div>;
 };
