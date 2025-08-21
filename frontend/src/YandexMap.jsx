@@ -1,49 +1,42 @@
 // frontend/src/YandexMap.jsx
 import React, { useEffect, useRef } from 'react';
 
-// IMPORTANT: You need to replace YOUR_YANDEX_MAPS_API_KEY in `frontend/index.html` with your actual key.
-
 const YandexMap = ({ points }) => {
   const mapRef = useRef(null);
-  // Use a ref to keep track of the map instance to prevent re-initialization
   const mapInstanceRef = useRef(null);
 
   useEffect(() => {
     const initMap = () => {
-      // If the API is not ready, wait and try again.
       if (!window.ymaps3) {
         setTimeout(initMap, 100);
         return;
       }
 
-      // The API is ready, proceed with initialization.
       window.ymaps3.ready.then(async () => {
-        // Prevent re-initialization if the map is already created
         if (mapInstanceRef.current) {
-          return;
+          mapInstanceRef.current.destroy();
+          mapInstanceRef.current = null;
         }
 
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = window.ymaps3;
 
-        // Find the center of the points
-      let center = [37.89, 55.68]; // Default center to Lyubertsy (lng, lat)
-        // if (points && points.length > 0) {
-        //   const validPoints = points.filter(p => p.lat && p.lng);
-        //   if (validPoints.length > 0) {
-        //     const lats = validPoints.map(p => p.lat);
-        //     const lngs = validPoints.map(p => p.lng);
-        //     center = [
-        //       (Math.min(...lngs) + Math.max(...lngs)) / 2,
-        //       (Math.min(...lats) + Math.max(...lats)) / 2,
-        //     ];
-        //   }
-        // }
+
+        let center = [37.89, 55.68]; // Default center to Lyubertsy (lng, lat)
+        let zoom = 12;
+
+        const validPoints = points.filter(p => p.lat && p.lng);
+        if (validPoints.length > 0) {
+          const lats = validPoints.map(p => p.lat);
+          const lngs = validPoints.map(p => p.lng);
+          center = [
+            (Math.min(...lngs) + Math.max(...lngs)) / 2,
+            (Math.min(...lats) + Math.max(...lats)) / 2,
+          ];
+          zoom = 13; // Zoom in closer when showing points
+        }
 
         const map = new YMap(mapRef.current, {
-          location: {
-            center: center,
-          zoom: 12,
-          },
+          location: { center, zoom },
         });
 
         mapInstanceRef.current = map;
@@ -51,35 +44,31 @@ const YandexMap = ({ points }) => {
         map.addChild(new YMapDefaultSchemeLayer());
         map.addChild(new YMapDefaultFeaturesLayer());
 
-        if (points) {
-          points.forEach(point => {
-            if (point.lat && point.lng) {
-              const markerElement = document.createElement('div');
-              markerElement.className = 'marker';
-              markerElement.style.width = '10px';
-              markerElement.style.height = '10px';
-              markerElement.style.backgroundColor = 'red';
-              markerElement.style.borderRadius = '50%';
-              const marker = new YMapMarker({ coordinates: [point.lng, point.lat] }, markerElement);
-              map.addChild(marker);
-            }
-          });
-        }
+        validPoints.forEach(point => {
+          const markerElement = document.createElement('div');
+          markerElement.className = 'marker';
+          markerElement.style.width = '10px';
+          markerElement.style.height = '10px';
+          markerElement.style.backgroundColor = 'red';
+          markerElement.style.borderRadius = '50%';
+          const marker = new YMapMarker({ coordinates: [point.lng, point.lat] }, markerElement);
+          map.addChild(marker);
+        });
       });
     };
 
     initMap();
 
+    // Cleanup on component unmount
     return () => {
-      // Cleanup the map instance on component unmount
       if (mapInstanceRef.current) {
         mapInstanceRef.current.destroy();
         mapInstanceRef.current = null;
       }
     };
-  }, [points]); // Rerun effect if points change
+  }, [points]);
 
-  return <div ref={mapRef} style={{ width: '100%', height: '400px', marginTop: '16px' }}></div>;
+  return <div ref={mapRef} style={{ width: '100%', height: '400px', marginTop: '16px' }} />;
 };
 
 export default YandexMap;

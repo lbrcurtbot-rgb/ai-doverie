@@ -1,5 +1,6 @@
 import os, io, uuid, re, json, datetime as dt
 import logging
+import openai
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
@@ -451,6 +452,8 @@ def list_plans(municipality_id: Optional[int] = None):
 @app.post("/api/appeals/generate-plan/{category}")
 async def generate_plan(category:str, payload: dict, request: Request):
     municipality_id = payload.get("municipality_id")
+    openai_api_key = payload.get("openai_api_key")
+
     muni = next((m for m in MUNICIPALITIES if m["id"]==municipality_id), {"name":"Муниципалитет"})
     df = pd.DataFrame(DB['rows'] or [], columns=['source','date','address','text','category','lat','lng','municipality_id'])
     if municipality_id:
@@ -465,7 +468,43 @@ async def generate_plan(category:str, payload: dict, request: Request):
         'topics': top_tokens(df_cat['text'].astype(str).tolist(), topn=7) if not df_cat.empty else [],
         'recent_dates': sorted(df_cat['date'].astype(str).str.slice(0,10).unique().tolist()) if not df_cat.empty else [],
     }
-    text = make_plan_text(category, muni['name'], insights)
+
+    text = ""
+    if openai_api_key:
+        try:
+            client = openai.OpenAI(api_key=openai_api_key)
+            prompt = f"""На основе следующих аналитических данных по категории '{category}' в муниципалитете {muni['name']}, подготовь развернутый план действий на русском языке.
+
+Структура плана:
+1.  **Диагностика проблематики**: Краткий анализ на основе данных.
+2.  **Быстрые победы (до 2 недель)**: 2-3 конкретных, легко реализуемых шага.
+3.  **Системные меры**: Долгосрочные действия.
+4.  **Коммуникации**: Как информировать жителей.
+5.  **Контроль и KPI**: Как измерять успех.
+
+Аналитические данные:
+- Всего обращений: {insights['count']}
+- Горячие точки (адреса с наибольшим числом жалоб): {json.dumps(insights['hotspots'], ensure_ascii=False, indent=2)}
+- Ключевые темы из обращений: {', '.join(insights['topics'])}
+- Даты последних обращений: {', '.join(insights['recent_dates'])}
+
+Сгенерируй только текст плана, без лишних вступлений и заключений.
+"""
+            completion = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Ты — ИИ-помощник для составления планов для муниципальных властей."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            text = completion.choices[0].message.content
+        except Exception as e:
+            logger.error(f"OpenAI API call failed: {e}")
+            # Fallback to default plan generation on error
+            text = make_plan_text(category, muni['name'], insights)
+    else:
+        text = make_plan_text(category, muni['name'], insights)
+
 
     plan_id = str(uuid.uuid4())
     docx_path = os.path.join(EXPORT_DIR, f"plan_{plan_id}.docx")
