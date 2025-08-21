@@ -26,7 +26,7 @@ const YandexMap = ({ points }) => {
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = window.ymaps3;
 
         // Find the center of the points
-        let center = [37.57, 55.75]; // Default center (lng, lat for yandex)
+      let center = [37.89, 55.68]; // Default center to Lyubertsy (lng, lat)
         if (points && points.length > 0) {
           const validPoints = points.filter(p => p.lat && p.lng);
           if (validPoints.length > 0) {
@@ -42,7 +42,7 @@ const YandexMap = ({ points }) => {
         const map = new YMap(mapRef.current, {
           location: {
             center: center,
-            zoom: 10,
+          zoom: 12,
           },
         });
 
